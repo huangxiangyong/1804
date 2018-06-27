@@ -1,0 +1,331 @@
+
+服务协议：
+         http:超文本传输协议                默认的端口：80
+         https：安全的超文本传输协议   默认的端口：443
+         ftp:文件传输协议                   默认的端口：21
+         tftp：简单的文件传输协议     默认的端口：69
+         telnet：远程管理协议          默认的端口：23
+         DNS：域名解析协议             默认的端口：53
+         smtp：用户发邮件协议        默认的端口：25
+         pop3：用户收邮件协议        默认的端口：110
+         snmp：网络管理协议           默认的端口：161
+
+
+
+                                                                          第一周重点内容！！！！！！！！！！！！
+
+别名的定义：简化复杂的命令
+• 查看已设置的别名
+– alias [别名名称]
+
+• 定义新的别名
+– alias 别名名称= '实际执行的命令行'
+
+• 取消已设置的别名
+– unalias [别名名称]
+
+yum相关的命令
+
+  卸载软件包：
+[root@server0 ~]# yum   remove   软件名
+
+  清空Yum缓存：
+[root@server0 ~]# yum  clean  all
+
+ 搜索仓库里所有的软件包：
+[root@server0 ~]# yum  search  软件名
+
+远程管理虚拟机
+
+ 真机远程管理虚拟机Server与虚拟机Desktop
+
+[root@room9pc01 ~]# ssh   root@172.25.0.11
+
+[root@room9pc01 ~]# ssh   root@172.25.0.10
+
+补充：Ctrl + shift + t 新开一个终端
+
+   -X(大写)：可以在远程管理时，本地运行对方的图形程序
+
+[root@room9pc01 ~]# ssh  -X  root@172.25.0.11
+[root@server0 ~]# firewall-config   #防火墙设置图形程序
+
+– wget  软件包的URL网址   -O   /目录路径/新文件名
+
+#####################################################
+
+二、配置永久的IP地址、子网掩码、网关地址
+
+ 修改配置文件：/etc/sysconfig/network-scripts/ifcfg-eth0
+
+1.查看识别的网卡名
+[root@A ~]# nmcli connection show 
+
+2.配置IP地址、子网掩码、网关地址
+# nmcli  connection   modify  'System eth0'      
+  ipv4.method   manual 
+  ipv4.addresses  '172.25.0.168/24     172.25.0.254' 
+  connection.autoconnect   yes 
+ 
+# nmcli   connection   修改    '网卡名'
+  ipv4.方法    手工配置
+  ipv4.地址   ' IP地址/子网掩码    网关地址'
+    每次开机自动启用配置    
+
+3.激活配置
+# nmcli  connection  up  'System eth0'
+
+[root@room9pc01 ~]# ssh -X root@172.25.0.168
+
+[root@A ~]# route    #查看网关地址
+
+######################################################
+
+重定向输出: 将前面命令的输出结果，写入到另一个文本文件中
+  >:覆盖重定向
+  >>:追加重定向
+ 管道  |  作用：将前面命令的输出结果，作为参数交由后面处理
+
+用户名：密码占位符：UID：基本组GID：用户描述信息:用户家目录：解释器
+
+usermod -u 1700  -d /opt/nsd11  -G tarena -s /sbin/nologin  nsd11
+useradd -u 1700  -d /opt/nsd11  -G tarena -s /sbin/nologin  nsd11
+
+userdel       用户名      #删除用户
+
+三、DNS服务器作用：将域名解析为IP地址
+
+  教学环境的DNS：172.25.254.254
+
+  检测DNS服务器是否能够解析：nslookup 
+
+  修改配置文件：/etc/resolv.conf 
+
+[root@A ~]# vim  /etc/resolv.conf
+nameserver  172.25.254.254
+
+[root@A ~]# nslookup classroom.example.com
+
+######################################################
+
+tar备份与恢复(制作压缩包)
+
+  1.减小了空间占用     2.分散文档管理
+
+ 常见的压缩格式及命令工具:
+	gzip----》.gz 
+	bzip2----》.bz2
+	xz----》.xz
+
+• tar 集成备份工具
+ – -c:创建归档
+ – -x:释放归档
+ – -f:指定归档文件名称
+ – -z、-j、-J:调用 .gz、.bz2、.xz 格式的工具进行处理
+ – -t:显示归档中的文件清单
+ – -C（大写）:指定释放的位置
+
+    打包： tar   选项       压缩包名      被压缩归档的源文档
+    解包:   tar   选项      压缩包名    -C  释放的位置
+
+
+################################################################
+NTP时间同步
+
+1.安装一个软件chrony   系统服务：chronyd
+
+2.修改配置文件
+ [root@server0 ~]# vim  /etc/chrony.conf
+   以#号开头的内容为注释内容
+  #server 0.rhel.pool.ntp.org  iburst
+  #server 1.rhel.pool.ntp.org  iburst
+  #server 2.rhel.pool.ntp.org  iburst
+  server classroom.example.com  iburst
+
+3 .重起服务
+ 
+4.验证：/etc/chrony.conf
+
+ [root@server0 ~]# date
+ [root@server0 ~]# date -s "2000-10-1  12:30:10"
+ [root@server0 ~]# date
+ [root@server0 ~]# systemctl  restart  chronyd
+ [root@server0 ~]# date
+ [root@server0 ~]# date
+
+#############################################################
+
+
+周期性任务
+
+• 用途:按照设置的时间间隔为用户反复执行某一项固定的系统任务
+
+• 软件包:cronie、crontabs
+• 系统服务:crond
+• 日志文件:/var/log/crond
+
+• 使用 crontab 命令
+– 编辑: crontab  -e  [-u 用户名]
+– 查看: crontab  -l  [-u 用户名]
+– 清除: crontab  -r  [-u 用户名]
+
+   每分钟记录当前的时间 , 写入到/opt/time.txt
+[root@server0 ~]# date >> /opt/time.txt
+[root@server0 ~]# cat /opt/time.txt
+
+[root@server0 ~]# crontab -e              #书写周期性计划任务
+[root@server0 ~]# crontab -l              #查看周期性计划任务
+*/1  *  *  *  *    date  >>  /opt/time.txt
+
+
+[root@server0 ~]# cat /opt/time.txt
+
+#############################################################
+
+关于grep的用法：
+
+显示/etc/login.defs有效信息(去除注释，去除空行)
+# grep -v  ^#  /etc/login.defs  |  grep  -v  ^$
+
+# grep -v ^# /etc/login.defs |  grep  -v  ^$  >  /opt/2.txt
+
+##############################################################
+
+关于chmod的用法
+
+以root用户新建/nsddir/目录，在此目录下新建readme.txt文件，并进一步完成下列操作
+ 1）使用户lisi能够在此目录下创建子目录   切换用户  su  -  lisi
+     chmod o+w  /nsddir/
+
+ 2）使用户lisi不能够在此目录下创建子目录
+     chmod o-w  /nsddir/
+
+ 3）使用户lisi能够修改readme.txt文件
+     chmod o+w  /nsddir/readme.txt
+
+ 4）调整此目录的权限，使所有用户都不能cd进入此目录
+     chmod u-x,g-x,o-x  /nsddir/
+
+ 5）为此目录及其下所有文档设置权限 rwxr-x---
+     chmod -R  u=rwx,g=rx,o=---  /nsddir/
+
+[root@server0 ~]# chmod g+s /nsd08    #设置Set GID权限
+###################################################################
+
+关于acl策略
+使用 getfacl、setfacl 命令
+– getfacl  文档...
+– setfacl  -m  u:用户名:权限类别   文档...
+– setfacl  -m  g:组名:权限类别     文档...
+– setfacl  -x  u:用户名   文档...      #删除指定的ACL
+– setfacl  -b  文档...                      #删除所有ACL
+
+root@server0 ~]# mkdir /nsd10
+[root@server0 ~]# setfacl -m u:lisi:rx /nsd10
+[root@server0 ~]# setfacl -m u:gelin01:rwx /nsd10
+[root@server0 ~]# setfacl -m u:zhangsan:rx /nsd10
+[root@server0 ~]# getfacl /nsd10                #查看ACL权限
+
+[root@server0 ~]# setfacl -x u:gelin01 /nsd10   #删除指定ACL
+[root@server0 ~]# getfacl /nsd10
+
+[root@server0 ~]# setfacl -b   /nsd10   #删除所有的ACL
+[root@server0 ~]# getfacl /nsd10
+
+###################################################################使用LDAP认证,网络用户
+
+     网络用户:LDAP服务器存储
+     本地用户:/etc/passwd
+
+ 1.安装一个sssd软件,与LDAP服务器沟通
+
+2.安装图形的工具authconfig-gtk或者直接用authconfig-tui,图形配置sssd
+
+ 3.运行图形的工具进行配置 
+ [root@server0 ~]# authconfig-gtk 
+
+  4.重起服务
+
+
+   5.验证:
+ [root@server0 ~]# grep  ldapuser0  /etc/passwd
+ [root@server0 ~]# id  ldapuser0
+
+##################################################################
+
+家目录的实现
+
+• 查看NFS资源
+  # showmount -e classroom.example.com
+• 挂载NFS资源
+# mkdir /home/guests
+  # mount classroom.example.com:/home/guests   /home/guests
+  # ls /home/guests
+
+  验证
+# su  -  ldapuser0
+
+########################################################
+
+ticky Bit
+• 附加在其他人的 x 位上
+– 其他人的权限标识会变为 t
+– 适用于开放 w 权限的目录,可以阻止用户滥用 w 写入
+权限(禁止操作别人的文档)
+[root@server0 ~]# chmod o+t /public
+[root@server0 ~]# ls -ld /public
+
+####################################################
+
+查找文件
+
+• 根据预设的条件递归查找对应的文件
+– find [目录] [条件1]  [-a|-o]   [条件2] ...
+
+– 常用条件表示:
+  -type  类型(f文件、d目录、l快捷方式)
+  -name  "文档名称"
+  -size  +|-文件大小(k、M、G)
+  -user  用户名
+
+• 使用find命令的 -exec 操作
+– find .. .. -exec 处理命令  {}  \;
+– 优势:以 {} 代替每一个结果,逐个处理,遇 \; 结束
+
+# find  /boot/ -size +300k  -exec cp  -r  {}  /opt  \;
+
+# ls  /opt
+
+# find  /root -name "nsd*" -type f  -exec cp  -r  {}  /opt  \;
+
+# ls  /opt
+
+• 根据名称查找,忽略大小写
+– -iname
+[root@server0 ~]# find /etc/ -name "PASSWD"
+[root@server0 ~]# find /etc/ -iname "PASSWD"
+
+• 根据账号名称或所属组
+– -group
+[root@server0 ~]# find /home/ -group student
+
+ 根据文件修改时间(过去时间)
+• -mtime
+
+[root@server0 ~]# find /var/log -mtime +90  #过去时间90天之前
+
+[root@server0 ~]# find /var/log -mtime -90  #过去时间90天之内
+
+#####################################################################
+
+
+                                        
+                                                                          
+
+
+
+
+
+
+
+
